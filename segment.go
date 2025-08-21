@@ -49,10 +49,36 @@ func newPunktSentenceTokenizer() *punktSentenceTokenizer {
 
 // segment splits text into sentences.
 func (p punktSentenceTokenizer) segment(text string) []Sentence {
+	return p.segmentWithOffsets(text)
+}
+
+// segmentWithOffsets splits text into sentences with position tracking.
+func (p punktSentenceTokenizer) segmentWithOffsets(text string) []Sentence {
 	tokens := p.tokenizer.Tokenize(text)
 	sents := make([]Sentence, len(tokens))
+	currentOffset := 0
+	
 	for i := range tokens {
-		sents[i] = Sentence{Text: strings.TrimSpace(tokens[i].Text)}
+		sentText := strings.TrimSpace(tokens[i].Text)
+		// Find the start position of this sentence in the original text
+		start := strings.Index(text[currentOffset:], sentText)
+		if start != -1 {
+			start += currentOffset
+			sents[i] = Sentence{
+				Text:  sentText,
+				Start: start,
+				End:   start + len(sentText),
+			}
+			currentOffset = start + len(sentText)
+		} else {
+			// Fallback if we can't find the exact match
+			sents[i] = Sentence{
+				Text:  sentText,
+				Start: currentOffset,
+				End:   currentOffset + len(sentText),
+			}
+			currentOffset += len(sentText)
+		}
 	}
 	return sents
 }

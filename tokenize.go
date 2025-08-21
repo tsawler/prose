@@ -11,6 +11,7 @@ type TokenTester func(string) bool
 
 type Tokenizer interface {
 	Tokenize(string) []*Token
+	TokenizeWithOffsets(string) []*Token
 }
 
 // iterTokenizer splits a sentence into words.
@@ -23,6 +24,7 @@ type iterTokenizer struct {
 	prefixes       []string
 	emoticons      map[string]int
 	isUnsplittable TokenTester
+	tokenPool      *TokenPool
 }
 
 type TokenizerOptFunc func(*iterTokenizer)
@@ -83,6 +85,13 @@ func UsingSplitCases(x []string) TokenizerOptFunc {
 	}
 }
 
+// UsingTokenPool sets the token pool for memory optimization.
+func UsingTokenPool(pool *TokenPool) TokenizerOptFunc {
+	return func(tokenizer *iterTokenizer) {
+		tokenizer.tokenPool = pool
+	}
+}
+
 // Constructor for default iterTokenizer
 func NewIterTokenizer(opts ...TokenizerOptFunc) *iterTokenizer {
 	tok := new(iterTokenizer)
@@ -95,6 +104,7 @@ func NewIterTokenizer(opts ...TokenizerOptFunc) *iterTokenizer {
 	tok.sanitizer = sanitizer
 	tok.specialRE = internalRE
 	tok.suffixes = suffixes
+	tok.tokenPool = NewTokenPool()
 
 	// Apply options if provided
 	for _, applyOpt := range opts {
@@ -109,6 +119,17 @@ func NewIterTokenizer(opts ...TokenizerOptFunc) *iterTokenizer {
 func addToken(s string, toks []*Token) []*Token {
 	if strings.TrimSpace(s) != "" {
 		toks = append(toks, &Token{Text: s})
+	}
+	return toks
+}
+
+func (t *iterTokenizer) addTokenWithOffset(s string, start int, toks []*Token) []*Token {
+	if strings.TrimSpace(s) != "" {
+		token := t.tokenPool.Get()
+		token.Text = s
+		token.Start = start
+		token.End = start + len(s)
+		toks = append(toks, token)
 	}
 	return toks
 }
@@ -158,8 +179,60 @@ func (t *iterTokenizer) doSplit(token string) []*Token {
 	return append(tokens, suffs...)
 }
 
+func (t *iterTokenizer) doSplitWithOffsets(token string, baseOffset int) []*Token {
+	tokens := []*Token{}
+	suffs := []*Token{}
+	currentOffset := baseOffset
+
+	last := 0
+	for token != "" && utf8.RuneCountInString(token) != last {
+		if t.isSpecial(token) {
+			// We've found a special case (e.g., an emoticon) -- so, we add it as a token without
+			// any further processing.
+			tokens = t.addTokenWithOffset(token, currentOffset, tokens)
+			break
+		}
+		last = utf8.RuneCountInString(token)
+		lower := strings.ToLower(token)
+		if hasAnyPrefix(token, t.prefixes) {
+			// Remove prefixes -- e.g., $100 -> [$, 100].
+			tokens = t.addTokenWithOffset(string(token[0]), currentOffset, tokens)
+			token = token[1:]
+			currentOffset++
+		} else if idx := hasAnyIndex(lower, t.splitCases); idx > -1 {
+			// Handle "they'll", "I'll", "Don't", "won't", amount($).
+			//
+			// they'll -> [they, 'll].
+			// don't -> [do, n't].
+			// amount($) -> [amount, (, $, )].
+			tokens = t.addTokenWithOffset(token[:idx], currentOffset, tokens)
+			currentOffset += idx
+			token = token[idx:]
+		} else if hasAnySuffix(token, t.suffixes) {
+			// Remove suffixes -- e.g., Well) -> [Well, )].
+			suffixStart := currentOffset + len(token) - 1
+			suffixToken := t.tokenPool.Get()
+			suffixToken.Text = string(token[len(token)-1])
+			suffixToken.Start = suffixStart
+			suffixToken.End = suffixStart + 1
+			suffs = append([]*Token{suffixToken}, suffs...)
+			token = token[:len(token)-1]
+		} else {
+			tokens = t.addTokenWithOffset(token, currentOffset, tokens)
+			break
+		}
+	}
+
+	return append(tokens, suffs...)
+}
+
 // tokenize splits a sentence into a slice of words.
 func (t *iterTokenizer) Tokenize(text string) []*Token {
+	return t.TokenizeWithOffsets(text)
+}
+
+// TokenizeWithOffsets splits a sentence into a slice of words with position tracking.
+func (t *iterTokenizer) TokenizeWithOffsets(text string) []*Token {
 	var tokens []*Token
 
 	clean, white := t.sanitizer.Replace(text), false
@@ -167,6 +240,8 @@ func (t *iterTokenizer) Tokenize(text string) []*Token {
 
 	start, index := 0, 0
 	cache := map[string][]*Token{}
+	originalIndex := 0
+	
 	for index <= length {
 		uc, size := utf8.DecodeRuneInString(clean[index:])
 		if size == 0 {
@@ -177,18 +252,31 @@ func (t *iterTokenizer) Tokenize(text string) []*Token {
 		if unicode.IsSpace(uc) != white {
 			if start < index {
 				span := clean[start:index]
+				spanStart := originalIndex
+				
 				if toks, found := cache[span]; found {
-					tokens = append(tokens, toks...)
+					// Clone tokens and update offsets
+					for _, tok := range toks {
+						newTok := t.tokenPool.Get()
+						newTok.Text = tok.Text
+						newTok.Start = spanStart
+						newTok.End = spanStart + len(tok.Text)
+						tokens = append(tokens, newTok)
+						spanStart += len(tok.Text)
+					}
 				} else {
-					toks := t.doSplit(span)
+					toks := t.doSplitWithOffsets(span, spanStart)
 					cache[span] = toks
 					tokens = append(tokens, toks...)
 				}
+				originalIndex += index - start
 			}
 			if uc == ' ' {
 				start = index + 1
+				originalIndex = index + 1
 			} else {
 				start = index
+				originalIndex = index
 			}
 			white = !white
 		}
@@ -196,7 +284,7 @@ func (t *iterTokenizer) Tokenize(text string) []*Token {
 	}
 
 	if start < index {
-		tokens = append(tokens, t.doSplit(clean[start:index])...)
+		tokens = append(tokens, t.doSplitWithOffsets(clean[start:index], originalIndex)...)
 	}
 
 	return tokens

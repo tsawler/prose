@@ -61,15 +61,12 @@ var keep = regexp.MustCompile(`^\-[A-Z]{3}\-$`)
 
 // averagedPerceptron is a Averaged Perceptron classifier.
 type averagedPerceptron struct {
-	classes []string
-	stamps  map[string]float64
-	totals  map[string]float64
-	tagMap  map[string]string
-	weights map[string]map[string]float64
-
-	// TODO: Training
-	//
-	// instances float64
+	classes   []string
+	stamps    map[string]float64
+	totals    map[string]float64
+	tagMap    map[string]string
+	weights   map[string]map[string]float64
+	instances float64
 }
 
 // newAveragedPerceptron creates a new AveragedPerceptron model.

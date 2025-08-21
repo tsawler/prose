@@ -1,4 +1,4 @@
-# prose [![Build Status](https://travis-ci.org/tsawler/prose.svg?branch=master)](https://travis-ci.org/tsawler/prose) [![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/tsawler/prose/v2@v2.0.0?tab=doc) [![Coverage Status](https://coveralls.io/repos/github/tsawler/prose/badge.svg?branch=master)](https://coveralls.io/github/tsawler/prose?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/tsawler/prose)](https://goreportcard.com/report/github.com/tsawler/prose) [![codebeat badge](https://codebeat.co/badges/a867ec38-c025-4f65-85f9-89a9188cc458)](https://codebeat.co/projects/github-com-tsawler-prose-master) [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/avelino/awesome-go#natural-language-processing)
+# prose [![Build Status](https://travis-ci.org/tsawler/prose.svg?branch=master)](https://travis-ci.org/tsawler/prose) [![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/tsawler/prose/v3@v3.0.0?tab=doc) [![Coverage Status](https://coveralls.io/repos/github/tsawler/prose/badge.svg?branch=master)](https://coveralls.io/github/tsawler/prose?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/tsawler/prose)](https://goreportcard.com/report/github.com/tsawler/prose) [![codebeat badge](https://codebeat.co/badges/a867ec38-c025-4f65-85f9-89a9188cc458)](https://codebeat.co/projects/github-com-tsawler-prose-master) [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/avelino/awesome-go#natural-language-processing)
 
 `prose` is a natural language processing library (English only, at the moment) in *pure Go*. It supports tokenization, segmentation, part-of-speech tagging, and named-entity extraction.
 
@@ -9,7 +9,7 @@ You can find a more detailed summary on the library's performance here: [Introdu
 ## Installation
 
 ```console
-$ go get github.com/tsawler/prose/v2
+$ go get github.com/tsawler/prose/v3
 ```
 
 ## Usage
@@ -32,7 +32,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/tsawler/prose/v2"
+    "github.com/tsawler/prose/v3"
 )
 
 func main() {
@@ -102,7 +102,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/tsawler/prose/v2"
+    "github.com/tsawler/prose/v3"
 )
 
 func main() {
@@ -152,7 +152,7 @@ import (
     "fmt"
     "strings"
 
-    "github.com/tsawler/prose/v2"
+    "github.com/tsawler/prose/v3"
 )
 
 func main() {
@@ -241,7 +241,7 @@ The full list of supported POS tags is given below.
 package main
 
 import (
-    "github.com/tsawler/prose/v2"
+    "github.com/tsawler/prose/v3"
 )
 
 func main() {
