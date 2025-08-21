@@ -135,9 +135,10 @@ func main() {
         // , ,
         // go VB
         // to TO
-        // http://example.com NN
+        // http://example.com VB
         // thanks NNS
-        // :) SYM
+        // : :
+        // ) )
         // . .
     }
 }
@@ -251,12 +252,14 @@ The full list of supported POS tags is given below.
 
 ### NER
 
-`prose` v2.0.0 includes a much improved version of v1.0.0's chunk package, which can identify people (`PERSON`) and geographical/political Entities (`GPE`) by default.
+`prose` v3.0.0 includes a significantly enhanced named entity recognition system that can identify 16 different entity types including people (`PERSON`), geographical/political entities (`GPE`), organizations (`ORG`), dates (`DATE`), money (`MONEY`), and many more. All predictions include confidence scores and precise position information.
 
 ```go
 package main
 
 import (
+    "fmt"
+
     "github.com/tsawler/prose/v3"
 )
 
