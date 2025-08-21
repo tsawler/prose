@@ -33,6 +33,7 @@ $ go get github.com/tsawler/prose/v3
 ### Contents
 
 * [Overview](#overview)
+* [Multilingual Support](#multilingual-support)
 * [Tokenizing](#tokenizing)
 * [Segmenting](#segmenting)
 * [Tagging](#tagging)
@@ -97,6 +98,70 @@ doc, err := prose.NewDocument(
         "Go is an open-source programming language created at Google.",
         prose.WithExtraction(false))
 ```
+
+### Multilingual Support
+
+`prose` v3.0.0 introduces comprehensive multilingual support with automatic language detection and language-specific processing for English, Spanish, French, German, and Japanese.
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "time"
+
+    "github.com/tsawler/prose/v3"
+)
+
+func main() {
+    // Automatic language detection
+    multiDoc, err := prose.NewMultilingualDocument("Bonjour le monde! Comment allez-vous?")
+    if err != nil {
+        fmt.Printf("Error: %v\n", err)
+        return
+    }
+    
+    lang, confidence := multiDoc.DetectedLanguage()
+    fmt.Printf("Detected language: %s (confidence: %.2f)\n", lang, confidence)
+    // Detected language: fr (confidence: 0.51)
+    
+    // Enhanced features with context and metadata
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    
+    doc, err := prose.NewDocument("Go is excellent for NLP processing!",
+        prose.WithContext(ctx),
+        prose.WithLanguage(prose.English),
+    )
+    if err != nil {
+        fmt.Printf("Error: %v\n", err)
+        return
+    }
+    
+    fmt.Printf("Processing time: %dms\n", doc.Metadata.ProcessingTimeMs)
+    fmt.Printf("Token count: %d\n", doc.Metadata.TokenCount)
+    
+    // Enhanced tokens with position tracking and confidence scores
+    for _, tok := range doc.Tokens() {
+        fmt.Printf("%-12s POS: %-4s Position: %d-%d Confidence: %.3f\n", 
+            tok.Text, tok.Tag, tok.Start, tok.End, tok.Confidence)
+        // Go           POS: NNP  Position: 0-2 Confidence: 0.707
+        // is           POS: VBZ  Position: 3-5 Confidence: 1.000
+        // excellent    POS: JJ   Position: 6-15 Confidence: 1.000
+        // ...
+    }
+}
+```
+
+The new multilingual capabilities include:
+
+- **Automatic Language Detection**: Detects the language of input text with confidence scoring
+- **Language-Specific Processing**: Optimized tokenization, stop words, and normalization per language
+- **Context Support**: All operations support `context.Context` for timeouts and cancellation
+- **Enhanced Metadata**: Processing statistics, timing, and language information
+- **Position Tracking**: Precise character positions for all tokens, entities, and sentences
+- **Confidence Scores**: ML predictions include reliability assessments
 
 ### Tokenizing
 
