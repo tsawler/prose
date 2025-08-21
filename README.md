@@ -1,13 +1,15 @@
-# prose [![Build Status](https://travis-ci.org/jdkato/prose.svg?branch=master)](https://travis-ci.org/jdkato/prose) [![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/jdkato/prose/v2@v2.0.0?tab=doc) [![Coverage Status](https://coveralls.io/repos/github/jdkato/prose/badge.svg?branch=master)](https://coveralls.io/github/jdkato/prose?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/jdkato/prose)](https://goreportcard.com/report/github.com/jdkato/prose) [![codebeat badge](https://codebeat.co/badges/a867ec38-c025-4f65-85f9-89a9188cc458)](https://codebeat.co/projects/github-com-jdkato-prose-master) [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/avelino/awesome-go#natural-language-processing)
+# prose [![Build Status](https://travis-ci.org/tsawler/prose.svg?branch=master)](https://travis-ci.org/tsawler/prose) [![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/tsawler/prose/v2@v2.0.0?tab=doc) [![Coverage Status](https://coveralls.io/repos/github/tsawler/prose/badge.svg?branch=master)](https://coveralls.io/github/tsawler/prose?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/tsawler/prose)](https://goreportcard.com/report/github.com/tsawler/prose) [![codebeat badge](https://codebeat.co/badges/a867ec38-c025-4f65-85f9-89a9188cc458)](https://codebeat.co/projects/github-com-tsawler-prose-master) [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/avelino/awesome-go#natural-language-processing)
 
 `prose` is a natural language processing library (English only, at the moment) in *pure Go*. It supports tokenization, segmentation, part-of-speech tagging, and named-entity extraction.
+
+This is a fork of the original project, [github.com/jdkato/prose](https://github.com/jdkato/prose) which was archived by the author some time ago.
 
 You can find a more detailed summary on the library's performance here: [Introducing `prose` v2.0.0: Bringing NLP *to Go*](https://medium.com/@errata.ai/introducing-prose-v2-0-0-bringing-nlp-to-go-a1f0c121e4a5).
 
 ## Installation
 
 ```console
-$ go get github.com/jdkato/prose/v2
+$ go get github.com/tsawler/prose/v2
 ```
 
 ## Usage
@@ -30,7 +32,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/jdkato/prose/v2"
+    "github.com/tsawler/prose/v2"
 )
 
 func main() {
@@ -88,8 +90,8 @@ doc, err := prose.NewDocument(
 |-----------------|-----------------------------------|
 | Email addresses | `Jane.Doe@example.com`            |
 | Hashtags        | `#trending`                       |
-| Mentions        | `@jdkato`                         |
-| URLs            | `https://github.com/jdkato/prose` |
+| Mentions        | `@tsawler`                         |
+| URLs            | `https://github.com/tsawler/prose` |
 | Emoticons       | `:-)`, `>:(`, `o_0`, etc.         |
 
 
@@ -100,12 +102,12 @@ import (
     "fmt"
     "log"
 
-    "github.com/jdkato/prose/v2"
+    "github.com/tsawler/prose/v2"
 )
 
 func main() {
     // Create a new document with the default configuration:
-    doc, err := prose.NewDocument("@jdkato, go to http://example.com thanks :).")
+    doc, err := prose.NewDocument("@tsawler, go to http://example.com thanks :).")
     if err != nil {
         log.Fatal(err)
     }
@@ -113,7 +115,7 @@ func main() {
     // Iterate over the doc's tokens:
     for _, tok := range doc.Tokens() {
         fmt.Println(tok.Text, tok.Tag)
-        // @jdkato NN
+        // @tsawler NN
         // , ,
         // go VB
         // to TO
@@ -150,7 +152,7 @@ import (
     "fmt"
     "strings"
 
-    "github.com/jdkato/prose/v2"
+    "github.com/tsawler/prose/v2"
 )
 
 func main() {
@@ -179,7 +181,7 @@ func main() {
 | NLTK    |    0.893 |               7.224 |
 | `prose` |    0.961 |               2.538 |
 
-(See [`scripts/test_model.py`](https://github.com/jdkato/aptag/blob/master/scripts/test_model.py) for more information.)
+(See [`scripts/test_model.py`](https://github.com/tsawler/aptag/blob/master/scripts/test_model.py) for more information.)
 
 The full list of supported POS tags is given below.
 
@@ -239,7 +241,7 @@ The full list of supported POS tags is given below.
 package main
 
 import (
-    "github.com/jdkato/prose/v2"
+    "github.com/tsawler/prose/v2"
 )
 
 func main() {
