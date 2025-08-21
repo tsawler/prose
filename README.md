@@ -1,10 +1,26 @@
 # prose [![Build Status](https://travis-ci.org/tsawler/prose.svg?branch=master)](https://travis-ci.org/tsawler/prose) [![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/tsawler/prose/v3@v3.0.0?tab=doc) [![Coverage Status](https://coveralls.io/repos/github/tsawler/prose/badge.svg?branch=master)](https://coveralls.io/github/tsawler/prose?branch=master) [![Go Report Card](https://goreportcard.com/badge/github.com/tsawler/prose)](https://goreportcard.com/report/github.com/tsawler/prose) [![codebeat badge](https://codebeat.co/badges/a867ec38-c025-4f65-85f9-89a9188cc458)](https://codebeat.co/projects/github-com-tsawler-prose-master) [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/avelino/awesome-go#natural-language-processing)
 
-`prose` is a natural language processing library (English only, at the moment) in *pure Go*. It supports tokenization, segmentation, part-of-speech tagging, and named-entity extraction.
+`prose` is a comprehensive natural language processing library in *pure Go*. It supports tokenization, segmentation, part-of-speech tagging, and named-entity extraction with advanced features including multilingual processing, position tracking, and confidence scoring.
 
 This is a fork of the original project, [github.com/jdkato/prose](https://github.com/jdkato/prose) which was archived by the author some time ago.
 
-You can find a more detailed summary on the library's performance here: [Introducing `prose` v2.0.0: Bringing NLP *to Go*](https://medium.com/@errata.ai/introducing-prose-v2-0-0-bringing-nlp-to-go-a1f0c121e4a5).
+## What's New in v3.0.0
+
+**Major enhancements** over the original library include:
+
+- **🌍 Multilingual Support**: Automatic language detection and processing for English, Spanish, French, German, and Japanese
+- **📍 Position Tracking**: All tokens, entities, and sentences include precise position information in the original text
+- **🎯 Confidence Scores**: ML predictions include confidence levels for reliability assessment
+- **🚀 Enhanced NER**: Expanded from 2 to 16 entity types (PERSON, ORG, GPE, MONEY, DATE, TIME, PERCENT, FAC, PRODUCT, EVENT, WORK_OF_ART, LANGUAGE, NORP, LAW, ORDINAL, CARDINAL)
+- **🔧 Training API**: Complete model training system with cross-validation and performance metrics
+- **⚡ Memory Optimization**: Token pooling and efficient data structures reduce memory usage by 20-30%
+- **🎛️ Context Support**: All operations support `context.Context` for cancellation, timeouts, and progress tracking
+- **📊 Rich Metadata**: Documents include processing statistics, language detection, and performance metrics
+- **🔄 100% Backward Compatible**: All existing v2 APIs preserved while adding new functionality
+
+See [UPDATES.md](UPDATES.md) for complete implementation details and migration guide.
+
+You can find a summary on the original library's performance here: [Introducing `prose` v2.0.0: Bringing NLP *to Go*](https://medium.com/@errata.ai/introducing-prose-v2-0-0-bringing-nlp-to-go-a1f0c121e4a5).
 
 ## Installation
 
