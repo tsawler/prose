@@ -13,15 +13,15 @@ This is a fork of the original project, [github.com/jdkato/prose](https://github
 
 **Major enhancements** over the original library include:
 
-- **🌍 Multilingual Support**: Automatic language detection and processing for English, Spanish, French, German, and Japanese
-- **📍 Position Tracking**: All tokens, entities, and sentences include precise position information in the original text
-- **🎯 Confidence Scores**: ML predictions include confidence levels for reliability assessment
-- **🚀 Enhanced NER**: Expanded from 2 to 16 entity types (PERSON, ORG, GPE, MONEY, DATE, TIME, PERCENT, FAC, PRODUCT, EVENT, WORK_OF_ART, LANGUAGE, NORP, LAW, ORDINAL, CARDINAL)
-- **🔧 Training API**: Complete model training system with cross-validation and performance metrics
+- ** Multilingual Support**: Automatic language detection and processing for English, Spanish, French, German, and Japanese
+- ** Position Tracking**: All tokens, entities, and sentences include precise position information in the original text
+- ** Confidence Scores**: ML predictions include confidence levels for reliability assessment
+- ** Enhanced NER**: Expanded from 2 to 16 entity types (PERSON, ORG, GPE, MONEY, DATE, TIME, PERCENT, FAC, PRODUCT, EVENT, WORK_OF_ART, LANGUAGE, NORP, LAW, ORDINAL, CARDINAL)
+- ** Training API**: Complete model training system with cross-validation and performance metrics
 - **⚡ Memory Optimization**: Token pooling and efficient data structures reduce memory usage by 20-30%
-- **🎛️ Context Support**: All operations support `context.Context` for cancellation, timeouts, and progress tracking
-- **📊 Rich Metadata**: Documents include processing statistics, language detection, and performance metrics
-- **🔄 100% Backward Compatible**: All existing v2 APIs preserved while adding new functionality
+- ** Context Support**: All operations support `context.Context` for cancellation, timeouts, and progress tracking
+- ** Rich Metadata**: Documents include processing statistics, language detection, and performance metrics
+- ** 100% Backward Compatible**: All existing v2 APIs preserved while adding new functionality
 
 See [UPDATES.md](UPDATES.md) for complete implementation details and migration guide.
 
