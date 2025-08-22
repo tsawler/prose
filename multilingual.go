@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/bbalet/stopwords"
 )
 
 // LanguageDetector provides language detection capabilities
@@ -210,44 +212,119 @@ func NewLanguageSpecificProcessor(lang Language) *LanguageSpecificProcessor {
 
 // GetStopWords returns stop words for the language
 func (lsp *LanguageSpecificProcessor) GetStopWords() []string {
-	switch lsp.language {
-	case English:
-		return []string{
-			"a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "he", "in", "is", "it",
-			"its", "of", "on", "that", "the", "to", "was", "will", "with", "the", "this", "but", "they",
-			"have", "had", "what", "said", "each", "which", "she", "do", "how", "their", "if", "up", "out",
-			"many", "then", "them", "these", "so", "some", "her", "would", "make", "like", "into", "him",
-			"time", "two", "more", "go", "no", "way", "could", "my", "than", "first", "been", "call", "who",
-			"its", "now", "find", "long", "down", "day", "did", "get", "come", "made", "may", "part",
+	// The stopwords library uses ISO 639-1 language codes
+	langCode := string(lsp.language)
+	
+	// Since the library doesn't export stop words directly, we'll use it functionally
+	// by testing words to see if they're removed as stop words
+	return getStopWordsForLanguage(langCode)
+}
+
+// getStopWordsForLanguage retrieves stop words for a given language code
+// Since the bbalet/stopwords library doesn't export stop words directly,
+// we detect them by testing if common words get filtered out
+func getStopWordsForLanguage(langCode string) []string {
+	// Comprehensive list of common stop words across languages
+	// We test each to see if the library considers it a stop word
+	testWords := getCommonWordsForTesting(langCode)
+	
+	var stopWords []string
+	for _, word := range testWords {
+		// Test each word individually to see if it's filtered as a stop word
+		cleaned := stopwords.CleanString(word, langCode, false)
+		if cleaned == "" || cleaned != word {
+			// Word was removed or modified, it's a stop word
+			stopWords = append(stopWords, word)
 		}
-	case Spanish:
-		return []string{
-			"a", "ante", "bajo", "cabe", "con", "contra", "de", "desde", "durante", "en", "entre", "hacia",
-			"hasta", "mediante", "para", "por", "según", "sin", "so", "sobre", "tras", "el", "la", "los",
-			"las", "un", "una", "unos", "unas", "y", "o", "pero", "si", "no", "que", "como", "cuando",
-			"donde", "quien", "cual", "cuyo", "este", "esta", "estos", "estas", "ese", "esa", "esos",
-			"esas", "aquel", "aquella", "aquellos", "aquellas", "mi", "tu", "su", "nuestro", "vuestro",
-			"mio", "tuyo", "suyo", "me", "te", "se", "nos", "os", "le", "les", "lo", "la", "los", "las",
-		}
-	case French:
-		return []string{
-			"le", "de", "et", "à", "un", "il", "être", "et", "en", "avoir", "que", "pour", "dans", "ce",
-			"son", "une", "sur", "avec", "ne", "se", "pas", "tout", "plus", "par", "grand", "en", "me",
-			"même", "elle", "vous", "ou", "du", "au", "très", "nous", "mon", "comme", "mais", "pouvoir",
-			"quel", "temps", "petit", "celui", "type", "cadet", "si", "aujourd", "gros", "si", "contre",
-			"pendant", "chez", "entre", "sous", "jusqu", "sans", "vers", "chez", "malgré", "concernant",
-		}
-	case German:
-		return []string{
-			"der", "die", "und", "in", "den", "von", "zu", "das", "mit", "sich", "des", "auf", "für",
-			"ist", "im", "dem", "nicht", "ein", "eine", "als", "auch", "es", "an", "werden", "aus", "er",
-			"hat", "dass", "sie", "nach", "wird", "bei", "einer", "um", "am", "sind", "noch", "wie",
-			"einem", "über", "einen", "so", "zum", "war", "haben", "nur", "oder", "aber", "vor", "zur",
-			"bis", "mehr", "durch", "man", "sein", "wurde", "sei", "in", "gegen", "vom", "können", "schon",
-		}
-	default:
-		return []string{}
 	}
+	
+	return stopWords
+}
+
+// getCommonWordsForTesting returns a comprehensive list of potential stop words to test
+func getCommonWordsForTesting(langCode string) []string {
+	// Start with common English words that might be stop words
+	words := []string{
+		// Articles, pronouns, prepositions, conjunctions
+		"a", "an", "and", "are", "as", "at", "be", "been", "by", "for", "from",
+		"has", "had", "have", "he", "her", "his", "how", "i", "in", "is", "it", 
+		"its", "of", "on", "or", "she", "that", "the", "their", "them", "they",
+		"this", "to", "was", "we", "were", "what", "when", "where", "which", "who",
+		"will", "with", "would", "you", "your",
+		// Common verbs and other frequent words
+		"about", "after", "all", "also", "am", "any", "back", "because", "before",
+		"being", "between", "both", "but", "can", "could", "did", "do", "does",
+		"down", "each", "even", "first", "get", "give", "go", "going", "good",
+		"got", "had", "has", "have", "here", "him", "himself", "if", "into",
+		"just", "know", "last", "like", "made", "make", "many", "may", "me",
+		"might", "more", "most", "much", "must", "my", "never", "new", "no",
+		"not", "now", "off", "old", "only", "other", "our", "out", "over", 
+		"own", "said", "same", "see", "should", "since", "so", "some", "still",
+		"such", "take", "than", "then", "there", "these", "thing", "think",
+		"those", "through", "time", "too", "two", "under", "up", "upon", "us",
+		"use", "used", "using", "very", "want", "way", "well", "went", "were",
+		"what", "while", "why", "will", "work", "year", "years", "yet",
+	}
+	
+	// Add language-specific common words based on the language code
+	switch langCode {
+	case "es": // Spanish
+		words = append(words, []string{
+			"el", "la", "los", "las", "un", "una", "unos", "unas", "y", "o", "pero",
+			"que", "de", "en", "a", "por", "para", "con", "sin", "sobre", "entre",
+			"hacia", "hasta", "desde", "durante", "mediante", "ante", "bajo", "contra",
+			"según", "tras", "es", "está", "son", "están", "ser", "estar", "hay",
+			"había", "fue", "era", "sido", "siendo", "yo", "tú", "él", "ella", "ello",
+			"nosotros", "vosotros", "ellos", "ellas", "mi", "tu", "su", "nuestro",
+			"vuestro", "este", "esta", "estos", "estas", "ese", "esa", "esos", "esas",
+			"aquel", "aquella", "aquellos", "aquellas", "lo", "le", "les", "se", "me",
+			"te", "nos", "os", "como", "cuando", "donde", "porque", "si", "no", "sí",
+			"más", "menos", "muy", "mucho", "poco", "todo", "nada", "algo", "cada",
+			"otro", "mismo", "tan", "tanto", "cual", "quien", "cuyo", "qué", "dónde",
+		}...)
+	case "fr": // French
+		words = append(words, []string{
+			"le", "la", "les", "un", "une", "des", "de", "du", "et", "à", "au", "aux",
+			"en", "pour", "par", "avec", "sans", "sous", "sur", "dans", "contre",
+			"vers", "chez", "entre", "depuis", "pendant", "avant", "après", "devant",
+			"derrière", "est", "sont", "être", "avoir", "fait", "faire", "dit", "dire",
+			"aller", "voir", "savoir", "pouvoir", "falloir", "vouloir", "je", "tu",
+			"il", "elle", "on", "nous", "vous", "ils", "elles", "mon", "ton", "son",
+			"ma", "ta", "sa", "mes", "tes", "ses", "notre", "votre", "leur", "nos",
+			"vos", "leurs", "ce", "cette", "ces", "celui", "celle", "ceux", "celles",
+			"ceci", "cela", "ça", "que", "qui", "quoi", "dont", "où", "si", "ne",
+			"pas", "plus", "moins", "très", "bien", "mal", "peu", "beaucoup", "trop",
+			"tout", "tous", "toute", "toutes", "quel", "quelle", "quels", "quelles",
+			"même", "autre", "aucun", "certain", "plusieurs", "tel", "chaque",
+		}...)
+	case "de": // German
+		words = append(words, []string{
+			"der", "die", "das", "den", "dem", "des", "ein", "eine", "einen", "einem",
+			"einer", "eines", "und", "oder", "aber", "doch", "sondern", "denn", "weil",
+			"wenn", "als", "dass", "ob", "zu", "in", "an", "auf", "aus", "bei", "mit",
+			"nach", "von", "vor", "für", "über", "unter", "zwischen", "durch", "gegen",
+			"ohne", "um", "bis", "seit", "während", "trotz", "wegen", "ist", "sind",
+			"war", "waren", "sein", "haben", "werden", "können", "müssen", "sollen",
+			"wollen", "mögen", "dürfen", "ich", "du", "er", "sie", "es", "wir", "ihr",
+			"mein", "dein", "sein", "unser", "euer", "dieser", "diese", "dieses",
+			"jener", "jene", "jenes", "welcher", "welche", "welches", "man", "sich",
+			"nicht", "kein", "keine", "sehr", "schon", "noch", "nur", "auch", "wieder",
+			"immer", "nie", "oft", "manchmal", "alle", "alles", "viel", "wenig",
+			"mehr", "weniger", "etwas", "nichts", "jemand", "niemand", "wo", "wann",
+			"wie", "warum", "was", "wer", "wen", "wem", "wessen",
+		}...)
+	case "ja": // Japanese (hiragana particles and common words)
+		words = append(words, []string{
+			"の", "は", "を", "に", "が", "と", "で", "て", "も", "から", "まで",
+			"へ", "や", "か", "など", "ね", "よ", "わ", "さ", "これ", "それ",
+			"あれ", "この", "その", "あの", "ここ", "そこ", "あそこ", "こう",
+			"そう", "ああ", "いる", "ある", "する", "なる", "れる", "られる",
+			"せる", "させる", "ない", "ます", "です", "だ", "である", "でも",
+			"しかし", "また", "および", "または", "あるいは", "なお", "ただし",
+		}...)
+	}
+	
+	return words
 }
 
 // NormalizeText performs language-specific text normalization
