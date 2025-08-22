@@ -7,4 +7,8 @@ require (
 	gopkg.in/neurosnap/sentences.v1 v1.0.7
 )
 
-require github.com/neurosnap/sentences v1.1.2 // indirect
+require (
+	github.com/bbalet/stopwords v1.0.0 // indirect
+	github.com/neurosnap/sentences v1.1.2 // indirect
+	golang.org/x/text v0.8.0 // indirect
+)
