@@ -70,9 +70,9 @@ var featureOrder = []string{
 // binaryMaxentClassifier is a feature encoding that generates vectors
 // containing binary joint-features of the form:
 //
-//    |  joint_feat(fs, l) = { 1 if (fs[fname] == fval) and (l == label)
-//    |                      {
-//    |                      { 0 otherwise
+//	|  joint_feat(fs, l) = { 1 if (fs[fname] == fval) and (l == label)
+//	|                      {
+//	|                      { 0 otherwise
 //
 // where `fname` is the name of an input-feature, `fval` is a value for that
 // input-feature, and `label` is a label.
@@ -386,27 +386,27 @@ func (e *entityExtracter) probClassify(features map[string]string) *mappedProbDi
 func parseEntities(ents []string) string {
 	// Entity type precedence (more specific types take precedence)
 	precedence := map[string]int{
-		"PERSON":     10,
-		"ORG":        9,
-		"MONEY":      8,
-		"DATE":       8,
-		"TIME":       8,
-		"PERCENT":    8,
-		"FAC":        7,
-		"PRODUCT":    7,
-		"EVENT":      7,
+		"PERSON":      10,
+		"ORG":         9,
+		"MONEY":       8,
+		"DATE":        8,
+		"TIME":        8,
+		"PERCENT":     8,
+		"FAC":         7,
+		"PRODUCT":     7,
+		"EVENT":       7,
 		"WORK_OF_ART": 7,
-		"LANGUAGE":   6,
-		"NORP":       6,
-		"LAW":        6,
-		"ORDINAL":    5,
-		"CARDINAL":   5,
-		"GPE":        4,
+		"LANGUAGE":    6,
+		"NORP":        6,
+		"LAW":         6,
+		"ORDINAL":     5,
+		"CARDINAL":    5,
+		"GPE":         4,
 	}
-	
+
 	bestEntity := ""
 	highestPrecedence := -1
-	
+
 	for _, ent := range ents {
 		if strings.HasPrefix(ent, "B-") || strings.HasPrefix(ent, "I-") {
 			entityType := strings.Split(ent, "-")[1]
@@ -416,11 +416,11 @@ func parseEntities(ents []string) string {
 			}
 		}
 	}
-	
+
 	if bestEntity != "" {
 		return bestEntity
 	}
-	
+
 	// Fallback to original behavior
 	if len(ents) > 0 && strings.Contains(ents[0], "-") {
 		return strings.Split(ents[0], "-")[1]
@@ -433,7 +433,7 @@ func maxWithConfidence(scores map[string]float64) (string, float64) {
 	var class string
 	max := math.Inf(-1)
 	total := 0.0
-	
+
 	// Find max and calculate total for normalization
 	for label, value := range scores {
 		total += math.Exp(value)
@@ -442,13 +442,13 @@ func maxWithConfidence(scores map[string]float64) (string, float64) {
 			class = label
 		}
 	}
-	
+
 	// Calculate confidence as softmax probability
 	confidence := math.Exp(max) / total
 	if math.IsNaN(confidence) || math.IsInf(confidence, 0) {
 		confidence = 0.0
 	}
-	
+
 	return class, confidence
 }
 
@@ -456,24 +456,24 @@ func coalesce(parts []*Token) Entity {
 	if len(parts) == 0 {
 		return Entity{}
 	}
-	
+
 	length := len(parts)
 	labels := make([]string, length)
 	tokens := make([]string, length)
 	totalConfidence := 0.0
-	
+
 	start := parts[0].Start
 	end := parts[len(parts)-1].End
-	
+
 	for i, tok := range parts {
 		tokens[i] = tok.Text
 		labels[i] = tok.Label
 		totalConfidence += tok.Confidence
 	}
-	
+
 	// Average confidence across all tokens in the entity
 	avgConfidence := totalConfidence / float64(length)
-	
+
 	return Entity{
 		Label:      parseEntities(labels),
 		Text:       strings.Join(tokens, " "),
@@ -499,14 +499,15 @@ func extract(i int, ctx []*Token, history []string) map[string]string {
 	feats["shape"] = shape(word)
 	feats["wordlen"] = strconv.Itoa(len(word))
 
-	if i == 0 {
+	switch i {
+	case 0:
 		feats["prevtag"] = "None"
 		feats["prevword"], feats["prevpos"] = "None", "None"
-	} else if i == 1 {
+	case 1:
 		feats["prevword"] = strings.ToLower(ctx[i-1].Text)
 		feats["prevpos"] = ctx[i-1].Tag
 		feats["prevtag"] = history[i-1]
-	} else {
+	default:
 		feats["prevword"] = strings.ToLower(ctx[i-1].Text)
 		feats["prevpos"] = ctx[i-1].Tag
 		feats["prevtag"] = history[i-1]
