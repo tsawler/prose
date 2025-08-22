@@ -1,6 +1,9 @@
 package prose
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
 	"sync"
 )
@@ -22,6 +25,37 @@ type LexiconEntry struct {
 	Domain     string   // Domain specificity
 }
 
+// ExternalLexicon represents the JSON structure for external lexicon files
+type ExternalLexicon struct {
+	Languages map[string]LanguageLexicon `json:"languages"`
+}
+
+// LanguageLexicon contains all word categories for a specific language
+type LanguageLexicon struct {
+	Words       []WordEntry     `json:"words,omitempty"`
+	Modifiers   []ModifierEntry `json:"modifiers,omitempty"`
+	Negations   []string        `json:"negations,omitempty"`
+	Positive    []WordEntry     `json:"positive,omitempty"`
+	Negative    []WordEntry     `json:"negative,omitempty"`
+	Intensifiers []string       `json:"intensifiers,omitempty"`
+	Diminishers []string        `json:"diminishers,omitempty"`
+}
+
+// WordEntry represents a sentiment word in JSON format
+type WordEntry struct {
+	Word       string   `json:"word"`
+	Sentiment  float64  `json:"sentiment"`
+	Confidence float64  `json:"confidence"`
+	POS        []string `json:"pos,omitempty"`
+	Domain     string   `json:"domain,omitempty"`
+}
+
+// ModifierEntry represents a modifier word in JSON format
+type ModifierEntry struct {
+	Word   string  `json:"word"`
+	Factor float64 `json:"factor"`
+}
+
 // LoadSentimentLexicon loads language-specific lexicon
 func LoadSentimentLexicon(lang Language) *SentimentLexicon {
 	lexicon := &SentimentLexicon{
@@ -40,6 +74,131 @@ func LoadSentimentLexicon(lang Language) *SentimentLexicon {
 	lexicon.loadNegations(lang)
 
 	return lexicon
+}
+
+// LoadSentimentLexiconWithExternal loads lexicon with optional external file support
+func LoadSentimentLexiconWithExternal(lang Language, externalPath string) (*SentimentLexicon, error) {
+	lexicon := &SentimentLexicon{
+		words:     make(map[string]LexiconEntry),
+		modifiers: make(map[string]float64),
+		negations: make(map[string]bool),
+	}
+
+	// Load base lexicon (hardcoded core words)
+	lexicon.loadBaseLexicon(lang)
+	lexicon.loadModifiers(lang)
+	lexicon.loadNegations(lang)
+
+	// Load external lexicon if provided
+	if externalPath != "" {
+		if err := lexicon.LoadExternalLexicon(externalPath, []Language{lang}); err != nil {
+			return nil, fmt.Errorf("failed to load external lexicon: %w", err)
+		}
+	}
+
+	return lexicon, nil
+}
+
+// LoadExternalLexicon loads and merges external lexicon data
+func (sl *SentimentLexicon) LoadExternalLexicon(filepath string, languages []Language) error {
+	sl.mutex.Lock()
+	defer sl.mutex.Unlock()
+
+	// Read JSON file
+	data, err := os.ReadFile(filepath)
+	if err != nil {
+		return fmt.Errorf("error reading lexicon file: %w", err)
+	}
+
+	// Parse JSON
+	var external ExternalLexicon
+	if err := json.Unmarshal(data, &external); err != nil {
+		return fmt.Errorf("error parsing lexicon JSON: %w", err)
+	}
+
+	// Process requested languages
+	for _, lang := range languages {
+		langKey := languageToJSONKey(lang)
+		if langData, exists := external.Languages[langKey]; exists {
+			sl.mergeLanguageData(langData)
+		}
+	}
+
+	return nil
+}
+
+// languageToJSONKey converts Language constants to JSON keys
+func languageToJSONKey(lang Language) string {
+	switch lang {
+	case English:
+		return "english"
+	case Spanish:
+		return "spanish"
+	case French:
+		return "french"
+	case German:
+		return "german"
+	case Japanese:
+		return "japanese"
+	default:
+		return strings.ToLower(string(lang))
+	}
+}
+
+// mergeLanguageData merges external language data with existing lexicon
+func (sl *SentimentLexicon) mergeLanguageData(data LanguageLexicon) {
+	// Merge sentiment words
+	for _, entry := range data.Words {
+		sl.words[strings.ToLower(entry.Word)] = LexiconEntry{
+			Word:       entry.Word,
+			Sentiment:  entry.Sentiment,
+			Confidence: entry.Confidence,
+			POS:        entry.POS,
+			Domain:     entry.Domain,
+		}
+	}
+
+	// Merge positive words (convert to LexiconEntry format)
+	for _, entry := range data.Positive {
+		sl.words[strings.ToLower(entry.Word)] = LexiconEntry{
+			Word:       entry.Word,
+			Sentiment:  entry.Sentiment,
+			Confidence: entry.Confidence,
+			POS:        entry.POS,
+			Domain:     entry.Domain,
+		}
+	}
+
+	// Merge negative words (convert to LexiconEntry format)
+	for _, entry := range data.Negative {
+		sl.words[strings.ToLower(entry.Word)] = LexiconEntry{
+			Word:       entry.Word,
+			Sentiment:  entry.Sentiment,
+			Confidence: entry.Confidence,
+			POS:        entry.POS,
+			Domain:     entry.Domain,
+		}
+	}
+
+	// Merge modifiers
+	for _, modifier := range data.Modifiers {
+		sl.modifiers[strings.ToLower(modifier.Word)] = modifier.Factor
+	}
+
+	// Merge intensifiers (default factor)
+	for _, intensifier := range data.Intensifiers {
+		sl.modifiers[strings.ToLower(intensifier)] = 1.5 // Default intensifier factor
+	}
+
+	// Merge diminishers (default factor)
+	for _, diminisher := range data.Diminishers {
+		sl.modifiers[strings.ToLower(diminisher)] = 0.5 // Default diminisher factor
+	}
+
+	// Merge negations
+	for _, negation := range data.Negations {
+		sl.negations[strings.ToLower(negation)] = true
+	}
 }
 
 // loadBaseLexicon loads sentiment words

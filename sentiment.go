@@ -43,6 +43,25 @@ func NewSentimentAnalyzer(lang Language, config SentimentConfig) *SentimentAnaly
 	}
 }
 
+// NewSentimentAnalyzerWithExternal creates a sentiment analyzer with external lexicon support
+func NewSentimentAnalyzerWithExternal(lang Language, config SentimentConfig, externalLexiconPath string) (*SentimentAnalyzer, error) {
+	lexicon, err := LoadSentimentLexiconWithExternal(lang, externalLexiconPath)
+	if err != nil {
+		return nil, err
+	}
+
+	classifier, err := loadSentimentModelWithExternal(lang, externalLexiconPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SentimentAnalyzer{
+		lexicon:    lexicon,
+		classifier: classifier,
+		config:     config,
+	}, nil
+}
+
 // AnalyzeDocument performs document-level sentiment analysis
 func (sa *SentimentAnalyzer) AnalyzeDocument(doc *Document) SentimentScore {
 	sentences := doc.Sentences()
@@ -564,4 +583,17 @@ func loadSentimentModel(lang Language) *sentimentClassifier {
 		model:    nil, // Will be implemented in Phase 2
 		features: newSentimentFeatureExtractor(lang),
 	}
+}
+
+// loadSentimentModelWithExternal loads a sentiment model with external lexicon support
+func loadSentimentModelWithExternal(lang Language, externalPath string) (*sentimentClassifier, error) {
+	features, err := newSentimentFeatureExtractorWithExternal(lang, externalPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &sentimentClassifier{
+		model:    nil, // Will be implemented in Phase 2
+		features: features,
+	}, nil
 }

@@ -1,7 +1,10 @@
 package prose
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
+	"os"
 	"strings"
 	"unicode"
 )
@@ -12,6 +15,7 @@ type sentimentFeatureExtractor struct {
 	usePOS        bool
 	useDependency bool
 	language      Language
+	externalWords map[string]map[string]bool // category -> words map
 }
 
 // newSentimentFeatureExtractor creates a new feature extractor
@@ -21,6 +25,88 @@ func newSentimentFeatureExtractor(lang Language) *sentimentFeatureExtractor {
 		usePOS:        true,
 		useDependency: false, // Will be enabled when dependency parsing is available
 		language:      lang,
+		externalWords: make(map[string]map[string]bool),
+	}
+}
+
+// newSentimentFeatureExtractorWithExternal creates a feature extractor with external word lists
+func newSentimentFeatureExtractorWithExternal(lang Language, externalPath string) (*sentimentFeatureExtractor, error) {
+	extractor := &sentimentFeatureExtractor{
+		ngramSize:     3,
+		usePOS:        true,
+		useDependency: false,
+		language:      lang,
+		externalWords: make(map[string]map[string]bool),
+	}
+
+	if externalPath != "" {
+		if err := extractor.loadExternalWords(externalPath); err != nil {
+			return nil, err
+		}
+	}
+
+	return extractor, nil
+}
+
+// loadExternalWords loads external word lists for feature extraction
+func (sfe *sentimentFeatureExtractor) loadExternalWords(filepath string) error {
+	data, err := os.ReadFile(filepath)
+	if err != nil {
+		return fmt.Errorf("error reading external words file: %w", err)
+	}
+
+	var external ExternalLexicon
+	if err := json.Unmarshal(data, &external); err != nil {
+		return fmt.Errorf("error parsing external words JSON: %w", err)
+	}
+
+	langKey := languageToJSONKey(sfe.language)
+	if langData, exists := external.Languages[langKey]; exists {
+		sfe.loadLanguageWords(langData)
+	}
+
+	return nil
+}
+
+
+// loadLanguageWords loads word lists for the specified language
+func (sfe *sentimentFeatureExtractor) loadLanguageWords(data LanguageLexicon) {
+	// Initialize categories
+	categories := []string{
+		"positive", "negative", "intensifiers", "diminishers",
+		"joy", "anger", "fear", "sadness", "surprise", "negations",
+		"modal_verbs", "discourse_markers", "subjective",
+	}
+
+	for _, category := range categories {
+		if sfe.externalWords[category] == nil {
+			sfe.externalWords[category] = make(map[string]bool)
+		}
+	}
+
+	// Load positive words
+	for _, entry := range data.Positive {
+		sfe.externalWords["positive"][strings.ToLower(entry.Word)] = true
+	}
+
+	// Load negative words
+	for _, entry := range data.Negative {
+		sfe.externalWords["negative"][strings.ToLower(entry.Word)] = true
+	}
+
+	// Load intensifiers
+	for _, word := range data.Intensifiers {
+		sfe.externalWords["intensifiers"][strings.ToLower(word)] = true
+	}
+
+	// Load diminishers
+	for _, word := range data.Diminishers {
+		sfe.externalWords["diminishers"][strings.ToLower(word)] = true
+	}
+
+	// Load negations
+	for _, word := range data.Negations {
+		sfe.externalWords["negations"][strings.ToLower(word)] = true
 	}
 }
 
@@ -85,7 +171,7 @@ func (sfe *sentimentFeatureExtractor) extractNGrams(tokens []*Token, features ma
 func (sfe *sentimentFeatureExtractor) extractCharNGrams(tokens []*Token, features map[string]float64) {
 	for _, token := range tokens {
 		word := strings.ToLower(token.Text)
-		
+
 		// Skip very short words and punctuation
 		if len(word) < 3 || !isWord(word) {
 			continue
@@ -508,8 +594,8 @@ func containsEmoji(text string) bool {
 		if r >= 0x1F600 && r <= 0x1F64F || // Emoticons
 			r >= 0x1F300 && r <= 0x1F5FF || // Misc Symbols and Pictographs
 			r >= 0x1F680 && r <= 0x1F6FF || // Transport and Map
-			r >= 0x2600 && r <= 0x26FF ||   // Misc symbols
-			r >= 0x2700 && r <= 0x27BF {    // Dingbats
+			r >= 0x2600 && r <= 0x26FF || // Misc symbols
+			r >= 0x2700 && r <= 0x27BF { // Dingbats
 			return true
 		}
 	}
@@ -573,6 +659,21 @@ func calculateSyntacticComplexity(tokens []*Token) float64 {
 
 // getPositiveIndicators returns positive sentiment words for the language
 func (sfe *sentimentFeatureExtractor) getPositiveIndicators() map[string]bool {
+	// Start with hardcoded core words
+	result := sfe.getCorePositiveIndicators()
+	
+	// Add external words if available
+	if externalWords, exists := sfe.externalWords["positive"]; exists {
+		for word := range externalWords {
+			result[word] = true
+		}
+	}
+	
+	return result
+}
+
+// getCorePositiveIndicators returns core hardcoded positive words
+func (sfe *sentimentFeatureExtractor) getCorePositiveIndicators() map[string]bool {
 	switch sfe.language {
 	case English:
 		return map[string]bool{
@@ -616,6 +717,21 @@ func (sfe *sentimentFeatureExtractor) getPositiveIndicators() map[string]bool {
 
 // getNegativeIndicators returns negative sentiment words for the language
 func (sfe *sentimentFeatureExtractor) getNegativeIndicators() map[string]bool {
+	// Start with hardcoded core words
+	result := sfe.getCoreNegativeIndicators()
+	
+	// Add external words if available
+	if externalWords, exists := sfe.externalWords["negative"]; exists {
+		for word := range externalWords {
+			result[word] = true
+		}
+	}
+	
+	return result
+}
+
+// getCoreNegativeIndicators returns core hardcoded negative words
+func (sfe *sentimentFeatureExtractor) getCoreNegativeIndicators() map[string]bool {
 	switch sfe.language {
 	case English:
 		return map[string]bool{
@@ -659,6 +775,21 @@ func (sfe *sentimentFeatureExtractor) getNegativeIndicators() map[string]bool {
 
 // getIntensifiers returns intensifying words for the language
 func (sfe *sentimentFeatureExtractor) getIntensifiers() map[string]bool {
+	// Start with hardcoded core words
+	result := sfe.getCoreIntensifiers()
+	
+	// Add external words if available
+	if externalWords, exists := sfe.externalWords["intensifiers"]; exists {
+		for word := range externalWords {
+			result[word] = true
+		}
+	}
+	
+	return result
+}
+
+// getCoreIntensifiers returns core hardcoded intensifiers
+func (sfe *sentimentFeatureExtractor) getCoreIntensifiers() map[string]bool {
 	switch sfe.language {
 	case English:
 		return map[string]bool{
@@ -696,6 +827,21 @@ func (sfe *sentimentFeatureExtractor) getIntensifiers() map[string]bool {
 
 // getDiminishers returns diminishing words for the language
 func (sfe *sentimentFeatureExtractor) getDiminishers() map[string]bool {
+	// Start with hardcoded core words
+	result := sfe.getCoreDiminishers()
+	
+	// Add external words if available
+	if externalWords, exists := sfe.externalWords["diminishers"]; exists {
+		for word := range externalWords {
+			result[word] = true
+		}
+	}
+	
+	return result
+}
+
+// getCoreDiminishers returns core hardcoded diminishers
+func (sfe *sentimentFeatureExtractor) getCoreDiminishers() map[string]bool {
 	switch sfe.language {
 	case English:
 		return map[string]bool{
@@ -918,6 +1064,21 @@ func (sfe *sentimentFeatureExtractor) getSurpriseWords() map[string]bool {
 
 // getNegationWords returns negation words for the language
 func (sfe *sentimentFeatureExtractor) getNegationWords() map[string]bool {
+	// Start with hardcoded core words
+	result := sfe.getCoreNegationWords()
+	
+	// Add external words if available
+	if externalWords, exists := sfe.externalWords["negations"]; exists {
+		for word := range externalWords {
+			result[word] = true
+		}
+	}
+	
+	return result
+}
+
+// getCoreNegationWords returns core hardcoded negation words
+func (sfe *sentimentFeatureExtractor) getCoreNegationWords() map[string]bool {
 	switch sfe.language {
 	case English:
 		return map[string]bool{

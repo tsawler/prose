@@ -2,6 +2,7 @@ package prose
 
 import (
 	"math"
+	"os"
 	"testing"
 )
 
@@ -428,6 +429,165 @@ func TestEmptySentiment(t *testing.T) {
 
 	if sentiment.Dominant != Neutral {
 		t.Errorf("Empty text should be classified as Neutral, got %s", sentiment.Dominant)
+	}
+}
+
+func TestExternalLexicon(t *testing.T) {
+	// Create a temporary JSON lexicon file
+	testLexicon := `{
+		"languages": {
+			"english": {
+				"positive": [
+					{
+						"word": "testawesome",
+						"sentiment": 0.9,
+						"confidence": 0.95
+					}
+				],
+				"negative": [
+					{
+						"word": "testterrible",
+						"sentiment": -0.8,
+						"confidence": 0.9
+					}
+				],
+				"intensifiers": ["testextremely"],
+				"diminishers": ["testslightly"],
+				"negations": ["testnot"]
+			}
+		}
+	}`
+
+	// Write to temporary file
+	tmpFile := "/tmp/test_lexicon.json"
+	err := os.WriteFile(tmpFile, []byte(testLexicon), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test lexicon file: %v", err)
+	}
+	defer os.Remove(tmpFile)
+
+	// Test loading lexicon directly first
+	lexicon, err := LoadSentimentLexiconWithExternal(English, tmpFile)
+	if err != nil {
+		t.Fatalf("Failed to load lexicon: %v", err)
+	}
+
+	// Check if external words are loaded
+	testScore := lexicon.GetSentiment("testawesome")
+	if testScore != 0.9 {
+		t.Errorf("Expected sentiment score 0.9 for testawesome, got %.2f", testScore)
+	}
+
+	testScore = lexicon.GetSentiment("testterrible")
+	if testScore != -0.8 {
+		t.Errorf("Expected sentiment score -0.8 for testterrible, got %.2f", testScore)
+	}
+
+	// Test loading analyzer with external lexicon
+	config := DefaultSentimentConfig()
+	config.UseML = false
+	analyzer, err := NewSentimentAnalyzerWithExternal(English, config, tmpFile)
+	if err != nil {
+		t.Fatalf("Failed to create analyzer with external lexicon: %v", err)
+	}
+
+	// Test positive external word
+	doc, _ := NewDocument("This is testawesome")
+	sentiment := analyzer.AnalyzeDocument(doc)
+	if sentiment.Polarity <= 0 {
+		t.Errorf("Expected positive sentiment for external positive word, got %.2f", sentiment.Polarity)
+	}
+
+	// Test negative external word
+	doc, _ = NewDocument("This is testterrible")
+	sentiment = analyzer.AnalyzeDocument(doc)
+	if sentiment.Polarity >= 0 {
+		t.Errorf("Expected negative sentiment for external negative word, got %.2f", sentiment.Polarity)
+	}
+
+	// Test that core words still work
+	doc, _ = NewDocument("This is excellent")
+	sentiment = analyzer.AnalyzeDocument(doc)
+	if sentiment.Polarity <= 0 {
+		t.Errorf("Expected positive sentiment for core positive word, got %.2f", sentiment.Polarity)
+	}
+}
+
+func TestExternalLexiconMultipleLanguages(t *testing.T) {
+	// Create a multilingual test lexicon
+	testLexicon := `{
+		"languages": {
+			"english": {
+				"positive": [{"word": "fantastic", "sentiment": 0.8, "confidence": 0.9}]
+			},
+			"spanish": {
+				"positive": [{"word": "fantástico", "sentiment": 0.8, "confidence": 0.9}]
+			},
+			"french": {
+				"positive": [{"word": "fantastique", "sentiment": 0.8, "confidence": 0.9}]
+			}
+		}
+	}`
+
+	tmpFile := "/tmp/test_multilang_lexicon.json"
+	err := os.WriteFile(tmpFile, []byte(testLexicon), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test lexicon file: %v", err)
+	}
+	defer os.Remove(tmpFile)
+
+	// Test loading different languages
+	languages := []Language{English, Spanish, French}
+	
+	for _, lang := range languages {
+		config := DefaultSentimentConfig()
+		config.UseML = false
+		analyzer, err := NewSentimentAnalyzerWithExternal(lang, config, tmpFile)
+		if err != nil {
+			t.Errorf("Failed to create analyzer for %s: %v", lang, err)
+			continue
+		}
+
+		// Create test text for each language
+		var testText string
+		switch lang {
+		case English:
+			testText = "This is fantastic"
+		case Spanish:
+			testText = "Esto es fantástico"
+		case French:
+			testText = "C'est fantastique"
+		}
+
+		doc, _ := NewDocument(testText)
+		sentiment := analyzer.AnalyzeDocument(doc)
+		if sentiment.Polarity <= 0 {
+			t.Errorf("Expected positive sentiment for %s external word, got %.2f", lang, sentiment.Polarity)
+		}
+	}
+}
+
+func TestExternalLexiconInvalidFile(t *testing.T) {
+	config := DefaultSentimentConfig()
+	
+	// Test with non-existent file
+	_, err := NewSentimentAnalyzerWithExternal(English, config, "/nonexistent/file.json")
+	if err == nil {
+		t.Error("Expected error for non-existent file")
+	}
+
+	// Test with invalid JSON
+	invalidJSON := `{"invalid": json}`
+	tmpFile := "/tmp/invalid_lexicon.json"
+	err = os.WriteFile(tmpFile, []byte(invalidJSON), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create invalid JSON file: %v", err)
+	}
+	defer os.Remove(tmpFile)
+
+	_, err = NewSentimentAnalyzerWithExternal(English, config, tmpFile)
+	if err == nil {
+		t.Error("Expected error for invalid JSON")
 	}
 }
 
