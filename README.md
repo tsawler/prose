@@ -348,3 +348,10 @@ It is also straightforward to train your own models for specific use cases. See 
 ## Credits
 
 This library is based on the original `prose` library by [Joseph Kato](https://github.com/jdkato/prose).
+
+### Dependencies
+
+- [gonum](https://gonum.org/v1/gonum) - Scientific computing packages for Go
+- [sentences](https://github.com/neurosnap/sentences) - Sentence segmentation library
+- [stopwords](https://github.com/bbalet/stopwords) - Multilingual stop words removal library
+- [golang.org/x/text](https://golang.org/x/text) - Go text processing support library
