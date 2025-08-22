@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2017 -2018 Joseph Kato
+Copyright (c) 2025 Trevor Sawler
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,3 +1,8 @@
+<a href="https://golang.org"><img src="https://img.shields.io/badge/powered_by-Go-3362c2.svg?style=flat-square" alt="Built with GoLang"></a>
+[![Version](https://img.shields.io/badge/goversion-1.24.x-blue.svg)](https://golang.org)
+[![License](http://img.shields.io/badge/license-mit-blue.svg?style=flat-square)](https://raw.githubusercontent.com/tsawler/prose/master/LICENSE.md)
+
+# Prose: Natural Language Processing in pure Go
 
 
 `prose` is a comprehensive natural language processing library in *pure Go*. It supports tokenization, segmentation, part-of-speech tagging, and named-entity extraction with advanced features including multilingual processing, position tracking, and confidence scoring.
@@ -338,4 +343,8 @@ func main() {
 }
 ```
 
-However, in an attempt to make this feature more useful, we've made it straightforward to train your own models for specific use cases. See [Prodigy + `prose`: Radically efficient machine teaching *in Go*](https://medium.com/@errata.ai/prodigy-prose-radically-efficient-machine-teaching-in-go-93389bf2d772) for a tutorial.
+It is also straightforward to train your own models for specific use cases. See [Prodigy + `prose`: Radically efficient machine teaching *in Go*](https://medium.com/@errata.ai/prodigy-prose-radically-efficient-machine-teaching-in-go-93389bf2d772) for a tutorial.
+
+## Credits
+
+This library is based on the original `prose` library by [Joseph Kato](https://github.com/jdkato/prose).
