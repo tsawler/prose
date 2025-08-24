@@ -608,6 +608,87 @@ func TestClauseBoundaryNegation(t *testing.T) {
 	}
 }
 
+func TestSentimentTraining(t *testing.T) {
+	// Create training data
+	trainingData := []SentimentTrainingData{
+		{Text: "This is excellent", Label: Positive, Language: English},
+		{Text: "This is terrible", Label: Negative, Language: English},
+		{Text: "This is amazing work", Label: StrongPositive, Language: English},
+		{Text: "This is awful garbage", Label: StrongNegative, Language: English},
+		{Text: "This is okay", Label: Neutral, Language: English},
+	}
+
+	// Train model
+	trainer := NewTrainer(DefaultTrainingConfig())
+	model, metrics, err := trainer.TrainSentimentClassifier(trainingData)
+	if err != nil {
+		t.Fatalf("Training failed: %v", err)
+	}
+
+	if model == nil {
+		t.Fatal("Expected trained model, got nil")
+	}
+
+	t.Logf("Training completed - Accuracy: %.2f, Time: %v", 
+		metrics.FinalAccuracy, metrics.TrainingTime)
+}
+
+func TestModelIntegration(t *testing.T) {
+	// Create training data
+	trainingData := []SentimentTrainingData{
+		{Text: "This is fantastic", Label: Positive, Language: English},
+		{Text: "This is horrible", Label: Negative, Language: English},
+		{Text: "This is neutral text", Label: Neutral, Language: English},
+	}
+
+	// Create model with sentiment training
+	model := ModelFromData("test-sentiment", UsingSentiment(trainingData))
+	
+	if model.sentimentModel == nil {
+		t.Fatal("Expected sentiment model to be trained")
+	}
+
+	// Create analyzer from model
+	config := DefaultSentimentConfig()
+	analyzer := model.SentimentAnalyzer(English, config)
+	
+	// Test analysis
+	doc, _ := NewDocument("This is fantastic")
+	sentiment := analyzer.AnalyzeDocument(doc)
+	
+	t.Logf("Sentiment analysis - Polarity: %.2f, Confidence: %.2f", 
+		sentiment.Polarity, sentiment.Confidence)
+}
+
+func TestModelSerialization(t *testing.T) {
+	// Create training data
+	trainingData := []SentimentTrainingData{
+		{Text: "Great product", Label: Positive, Language: English},
+		{Text: "Bad product", Label: Negative, Language: English},
+	}
+
+	// Create and train model
+	model := ModelFromData("test-serialization", UsingSentiment(trainingData))
+	
+	// Save model
+	tempDir := "/tmp/test_sentiment_model"
+	err := model.Write(tempDir)
+	if err != nil {
+		t.Fatalf("Failed to save model: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Load model
+	loadedModel := ModelFromDisk(tempDir)
+	
+	// Verify sentiment model was loaded
+	if loadedModel.sentimentModel == nil && model.sentimentModel != nil {
+		t.Error("Sentiment model was not properly serialized/deserialized")
+	}
+
+	t.Logf("Model serialization test completed")
+}
+
 func BenchmarkSentimentAnalysis(b *testing.B) {
 	texts := []string{
 		"This product exceeded my expectations in every way.",

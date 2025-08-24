@@ -202,6 +202,21 @@ func (m *binaryMaxentClassifier) encode(features map[string]string, label string
 	return encoding
 }
 
+// encodeSentimentFeatures encodes features for sentiment classification
+func (m *binaryMaxentClassifier) encodeSentimentFeatures(features map[string]string, label string) []encodedValue {
+	encoding := []encodedValue{}
+	// Iterate through all provided features (not limited by featureOrder)
+	for fname, fval := range features {
+		entry := strings.Join([]string{fname, fval, label}, "-")
+		if ret, found := m.mapping[entry]; found {
+			encoding = append(encoding, encodedValue{
+				key:   ret,
+				value: 1})
+		}
+	}
+	return encoding
+}
+
 func (m *binaryMaxentClassifier) encodeGIS(features map[string]string, label string) []encodedValue {
 	encoding := m.encode(features, label)
 	length := len(m.mapping)
