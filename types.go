@@ -132,3 +132,98 @@ const (
 	OrdinalEntity      EntityType = "ORDINAL"      // "first", "second", etc.
 	CardinalEntity     EntityType = "CARDINAL"     // Numerals that do not fall under another type
 )
+
+// SentimentScore represents the sentiment analysis results
+type SentimentScore struct {
+	// Primary sentiment metrics
+	Polarity   float64 // -1.0 (negative) to 1.0 (positive)
+	Intensity  float64 // 0.0 (neutral) to 1.0 (strong)
+	Confidence float64 // 0.0 to 1.0 reliability score
+
+	// Detailed classification
+	Dominant SentimentClass             // Primary sentiment class
+	Scores   map[SentimentClass]float64 // Individual class probabilities
+
+	// Subjectivity analysis
+	Subjectivity float64 // 0.0 (objective) to 1.0 (subjective)
+
+	// Contributing factors
+	Features SentimentFeatures // Key features affecting sentiment
+}
+
+// SentimentClass represents sentiment categories
+type SentimentClass string
+
+const (
+	StrongPositive SentimentClass = "strong_positive"
+	Positive       SentimentClass = "positive"
+	Neutral        SentimentClass = "neutral"
+	Negative       SentimentClass = "negative"
+	StrongNegative SentimentClass = "strong_negative"
+	Mixed          SentimentClass = "mixed" // For conflicting sentiments
+)
+
+// SentimentFeatures tracks contributing factors
+type SentimentFeatures struct {
+	PositiveWords []WordContribution
+	NegativeWords []WordContribution
+	Modifiers     []ModifierEffect
+	Negations     []NegationScope
+	Intensifiers  []IntensifierEffect
+}
+
+// WordContribution represents a word's sentiment contribution
+type WordContribution struct {
+	Word          string
+	Position      int
+	BaseScore     float64
+	AdjustedScore float64
+	Confidence    float64
+}
+
+// ModifierEffect represents sentiment modifiers
+type ModifierEffect struct {
+	Modifier string
+	Type     ModifierType
+	Position int
+	Impact   float64
+}
+
+// ModifierType categorizes sentiment modifiers
+type ModifierType string
+
+const (
+	Intensifier ModifierType = "intensifier" // "very", "extremely"
+	Diminisher  ModifierType = "diminisher"  // "slightly", "somewhat"
+	Negation    ModifierType = "negation"    // "not", "never"
+)
+
+// NegationScope represents the scope of a negation
+type NegationScope struct {
+	Position int
+	Scope    int
+}
+
+// IntensifierEffect represents the effect of an intensifier
+type IntensifierEffect struct {
+	Word     string
+	Position int
+	Factor   float64
+}
+
+// AspectSentiment for aspect-based sentiment analysis
+type AspectSentiment struct {
+	Aspect    string
+	Text      string
+	Sentiment SentimentScore
+	Start     int
+	End       int
+}
+
+// SentimentContext provides analysis context
+type SentimentContext struct {
+	Domain  string // "general", "financial", "medical", etc.
+	Sarcasm bool   // Sarcasm detection flag
+	Irony   bool   // Irony detection flag
+	Emoji   bool   // Consider emoji sentiment
+}

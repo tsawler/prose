@@ -33,7 +33,7 @@ func TestModelFromDisk(t *testing.T) {
 var embeddedModel embed.FS
 
 func TestModelFromFS(t *testing.T) {
-	err := fs.WalkDir(embeddedModel, ".", func(path string, d fs.DirEntry, err error) error {
+	_ = fs.WalkDir(embeddedModel, ".", func(path string, d fs.DirEntry, err error) error {
 		//fmt.Printf("Walking dir %s, err %s\n", path, err)
 		return nil
 	})

@@ -8,7 +8,7 @@ require (
 )
 
 require (
-	github.com/bbalet/stopwords v1.0.0 // indirect
+	github.com/bbalet/stopwords v1.0.0
 	github.com/neurosnap/sentences v1.1.2 // indirect
 	golang.org/x/text v0.8.0 // indirect
 )
