@@ -19,7 +19,7 @@ type SentimentConfig struct {
 	UseML          bool
 	UseContext     bool
 	MinConfidence  float64
-	NegationWindow int  // Words to check for negation
+	NegationWindow int // Words to check for negation
 	AspectAnalysis bool
 }
 
@@ -118,10 +118,10 @@ func (sa *SentimentAnalyzer) AnalyzeSentence(sent Sentence, tokens []Token) Sent
 // analyzeLexicon performs lexicon-based sentiment analysis
 func (sa *SentimentAnalyzer) analyzeLexicon(tokens []*Token) SentimentScore {
 	var (
-		posScore    float64
-		negScore    float64
-		wordCount   int
-		features    SentimentFeatures
+		posScore  float64
+		negScore  float64
+		wordCount int
+		features  SentimentFeatures
 	)
 
 	for i, token := range tokens {
@@ -280,7 +280,7 @@ func (sa *SentimentAnalyzer) applyModifiers(baseSentiment float64, tokens []*Tok
 
 	// Check previous 2 tokens for modifiers
 	start := maxInt(0, position-2)
-	
+
 	for i := start; i < position; i++ {
 		modifier := sa.lexicon.GetModifierStrength(tokens[i].Text)
 		if modifier != 0 {
@@ -302,7 +302,7 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 	if sa.classifier == nil {
 		return make(map[string]float64)
 	}
-	
+
 	// Use simplified features that match training
 	// Create a document from tokens for feature extraction
 	text := ""
@@ -312,17 +312,17 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 		}
 		text += token.Text
 	}
-	
+
 	// Use fast tokenization instead of full NLP processing for training
 	features := make(map[string]float64)
-	
+
 	// Simple word-level tokenization (much faster than full NLP)
 	words := strings.Fields(text)
 	docTokens := make([]Token, len(words))
 	for i, word := range words {
 		docTokens[i] = Token{Text: word}
 	}
-	
+
 	// Simple unigram features
 	wordCounts := make(map[string]int)
 	for _, token := range docTokens {
@@ -331,41 +331,41 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 			wordCounts[word]++
 		}
 	}
-	
+
 	// Add word features
 	for word, count := range wordCounts {
 		if count > 0 {
 			features["word:"+word] = float64(count)
 		}
 	}
-	
+
 	// Expanded intensity-aware sentiment indicators
 	strongPosWords := []string{
-		"amazing", "excellent", "outstanding", "brilliant", "perfect", "fantastic", "awesome", "superb", 
-		"magnificent", "exceptional", "love", "adore", "incredible", "phenomenal", "extraordinary", 
+		"amazing", "excellent", "outstanding", "brilliant", "perfect", "fantastic", "awesome", "superb",
+		"magnificent", "exceptional", "love", "adore", "incredible", "phenomenal", "extraordinary",
 		"spectacular", "wonderful", "marvelous", "fabulous", "sensational", "stunning", "breathtaking",
 		"flawless", "impeccable", "divine", "sublime", "exquisite", "astounding", "remarkable", "thrilled",
 		"ecstatic", "overjoyed", "delighted", "best", "greatest", "finest", "ultimate", "supreme"}
-	
+
 	weakPosWords := []string{
 		"good", "nice", "okay", "fine", "decent", "adequate", "satisfactory", "reasonable", "solid",
 		"fair", "acceptable", "pleasant", "comfortable", "suitable", "workable", "functional"}
-	
+
 	strongNegWords := []string{
-		"terrible", "awful", "horrible", "disgusting", "atrocious", "appalling", "pathetic", "useless", 
+		"terrible", "awful", "horrible", "disgusting", "atrocious", "appalling", "pathetic", "useless",
 		"worthless", "hate", "despise", "abysmal", "dreadful", "ghastly", "hideous", "revolting",
 		"repulsive", "vile", "despicable", "detestable", "loathe", "abhor", "worst", "nightmare",
 		"disaster", "catastrophe", "garbage", "trash", "junk", "crap", "shit", "hell", "damn"}
-	
+
 	weakNegWords := []string{
 		"bad", "poor", "disappointing", "mediocre", "subpar", "inferior", "lacking", "flawed",
 		"unsatisfactory", "inadequate", "unacceptable", "problematic", "deficient", "faulty"}
-	
+
 	strongPosCount := 0
 	weakPosCount := 0
 	strongNegCount := 0
 	weakNegCount := 0
-	
+
 	for _, token := range docTokens {
 		word := strings.ToLower(token.Text)
 		for _, w := range strongPosWords {
@@ -389,22 +389,22 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 			}
 		}
 	}
-	
+
 	features["strong_pos_count"] = float64(strongPosCount)
 	features["weak_pos_count"] = float64(weakPosCount)
 	features["strong_neg_count"] = float64(strongNegCount)
 	features["weak_neg_count"] = float64(weakNegCount)
-	
+
 	// Overall sentiment polarity
 	features["pos_count"] = float64(strongPosCount + weakPosCount)
 	features["neg_count"] = float64(strongNegCount + weakNegCount)
-	
+
 	// Sentiment intensity ratio
 	totalSentiment := float64(strongPosCount + weakPosCount + strongNegCount + weakNegCount)
 	if totalSentiment > 0 {
-		features["strong_sentiment_ratio"] = float64(strongPosCount + strongNegCount) / totalSentiment
+		features["strong_sentiment_ratio"] = float64(strongPosCount+strongNegCount) / totalSentiment
 	}
-	
+
 	// Enhanced distinguishing features for strong vs weak sentiment
 	if strongNegCount > 0 && weakNegCount == 0 && strongPosCount == 0 {
 		features["pure_strong_negative"] = 1.0
@@ -418,7 +418,7 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 	if weakPosCount > 0 && strongPosCount == 0 && strongNegCount == 0 {
 		features["pure_weak_positive"] = 1.0
 	}
-	
+
 	// Strong sentiment dominance patterns
 	if strongNegCount > weakNegCount && strongNegCount > 0 {
 		features["strong_neg_dominant"] = 1.0
@@ -432,7 +432,7 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 	if weakPosCount > strongPosCount && weakPosCount > 0 {
 		features["weak_pos_dominant"] = 1.0
 	}
-	
+
 	// Multiple strong words indicate very strong sentiment
 	if strongNegCount > 1 {
 		features["multiple_strong_negative"] = float64(strongNegCount)
@@ -440,26 +440,26 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 	if strongPosCount > 1 {
 		features["multiple_strong_positive"] = float64(strongPosCount)
 	}
-	
+
 	// Intensity ratios
-	if strongNegCount + weakNegCount > 0 {
-		features["strong_neg_ratio"] = float64(strongNegCount) / float64(strongNegCount + weakNegCount)
+	if strongNegCount+weakNegCount > 0 {
+		features["strong_neg_ratio"] = float64(strongNegCount) / float64(strongNegCount+weakNegCount)
 	}
-	if strongPosCount + weakPosCount > 0 {
-		features["strong_pos_ratio"] = float64(strongPosCount) / float64(strongPosCount + weakPosCount)
+	if strongPosCount+weakPosCount > 0 {
+		features["strong_pos_ratio"] = float64(strongPosCount) / float64(strongPosCount+weakPosCount)
 	}
-	
+
 	if strongPosCount == 0 && weakPosCount == 0 && strongNegCount == 0 && weakNegCount == 0 {
 		features["no_sentiment_words"] = 1.0
 	}
-	
+
 	features["length"] = float64(len(docTokens))
-	
+
 	// Punctuation and intensity features
 	exclamations := 0
 	questions := 0
 	allCaps := 0
-	
+
 	for _, token := range docTokens {
 		text := token.Text
 		if strings.Contains(text, "!") {
@@ -472,29 +472,29 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 			allCaps++
 		}
 	}
-	
+
 	features["exclamations"] = float64(exclamations)
 	features["questions"] = float64(questions)
 	features["all_caps_words"] = float64(allCaps)
-	
+
 	// Enhanced intensity indicators
 	multiExclamations := 0
 	intensifiers := 0
 	superlatives := 0
-	
-	intensifierWords := []string{"very", "extremely", "incredibly", "absolutely", "totally", "completely", 
+
+	intensifierWords := []string{"very", "extremely", "incredibly", "absolutely", "totally", "completely",
 		"utterly", "quite", "really", "truly", "highly", "deeply", "super", "so", "too", "way"}
-	superlativeWords := []string{"most", "least", "best", "worst", "greatest", "smallest", "biggest", 
+	superlativeWords := []string{"most", "least", "best", "worst", "greatest", "smallest", "biggest",
 		"highest", "lowest", "finest", "ultimate", "maximum", "minimum"}
-		
+
 	for _, token := range docTokens {
 		text := strings.ToLower(token.Text)
-		
+
 		// Multiple exclamation marks
 		if strings.Count(token.Text, "!") > 1 {
 			multiExclamations++
 		}
-		
+
 		// Intensifier words
 		for _, intensifier := range intensifierWords {
 			if text == intensifier {
@@ -502,7 +502,7 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 				break
 			}
 		}
-		
+
 		// Superlative words
 		for _, superlative := range superlativeWords {
 			if text == superlative {
@@ -511,11 +511,11 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 			}
 		}
 	}
-	
+
 	features["multi_exclamations"] = float64(multiExclamations)
 	features["intensifiers"] = float64(intensifiers)
 	features["superlatives"] = float64(superlatives)
-	
+
 	// Text pattern features for intensity
 	fullText := ""
 	for i, token := range docTokens {
@@ -524,32 +524,32 @@ func (sa *SentimentAnalyzer) extractFeatures(tokens []*Token) map[string]float64
 		}
 		fullText += token.Text
 	}
-	
+
 	// Strong patterns that indicate intensity
 	if strings.Contains(strings.ToUpper(fullText), "!!!") {
 		features["triple_exclamation"] = 1.0
 	}
 	if strings.Contains(strings.ToUpper(fullText), "NEVER") ||
-	   strings.Contains(strings.ToUpper(fullText), "ALWAYS") {
+		strings.Contains(strings.ToUpper(fullText), "ALWAYS") {
 		features["absolute_language"] = 1.0
 	}
-	
+
 	// Emotional expression patterns
 	if strings.Contains(strings.ToLower(fullText), "can't believe") ||
-	   strings.Contains(strings.ToLower(fullText), "cannot believe") {
+		strings.Contains(strings.ToLower(fullText), "cannot believe") {
 		features["disbelief_expression"] = 1.0
 	}
-	
+
 	// Count sentiment word density relative to text length
 	if len(docTokens) > 0 {
 		sentimentDensity := totalSentiment / float64(len(docTokens))
 		features["sentiment_density"] = sentimentDensity
-		
+
 		if sentimentDensity > 0.3 {
 			features["high_sentiment_density"] = 1.0
 		}
 	}
-	
+
 	return features
 }
 
@@ -636,7 +636,40 @@ func (sa *SentimentAnalyzer) aggregateSentiments(sentenceScores []SentimentScore
 		features.Intensifiers = append(features.Intensifiers, score.Features.Intensifiers...)
 	}
 
-	dominant := classifyPolarity(avgPolarity, avgIntensity)
+	// Properly aggregate ML class probabilities instead of recalculating
+	aggregatedScores := make(map[SentimentClass]float64)
+	for _, sentClass := range []SentimentClass{StrongPositive, Positive, Neutral, Negative, StrongNegative} {
+		totalProb := 0.0
+		totalWeight := 0.0
+		for _, score := range sentenceScores {
+			if prob, exists := score.Scores[sentClass]; exists {
+				weight := score.Confidence
+				if weight == 0 {
+					weight = 1.0 / float64(len(sentenceScores))
+				}
+				totalProb += prob * weight
+				totalWeight += weight
+			}
+		}
+		if totalWeight > 0 {
+			aggregatedScores[sentClass] = totalProb / totalWeight
+		} else {
+			aggregatedScores[sentClass] = 0.0
+		}
+	}
+
+	// Find dominant class from aggregated scores
+	dominant := Neutral
+	maxProb := 0.0
+	for class, prob := range aggregatedScores {
+		if prob > maxProb {
+			maxProb = prob
+			dominant = class
+		}
+	}
+
+	// Update confidence to be the probability of the dominant class
+	avgConfidence = maxProb
 
 	return SentimentScore{
 		Polarity:   avgPolarity,
@@ -644,13 +677,7 @@ func (sa *SentimentAnalyzer) aggregateSentiments(sentenceScores []SentimentScore
 		Confidence: avgConfidence,
 		Dominant:   dominant,
 		Features:   features,
-		Scores: map[SentimentClass]float64{
-			StrongPositive: calculateClassProb(avgPolarity, avgIntensity, StrongPositive),
-			Positive:       calculateClassProb(avgPolarity, avgIntensity, Positive),
-			Neutral:        calculateClassProb(avgPolarity, avgIntensity, Neutral),
-			Negative:       calculateClassProb(avgPolarity, avgIntensity, Negative),
-			StrongNegative: calculateClassProb(avgPolarity, avgIntensity, StrongNegative),
-		},
+		Scores:     aggregatedScores,
 	}
 }
 
@@ -693,14 +720,14 @@ func isContentWord(token *Token) bool {
 // isClauseBoundary checks if a token represents a clause boundary
 func isClauseBoundary(token *Token) bool {
 	boundaries := map[string]bool{
-		",":   true,
-		";":   true,
-		":":   true,
-		".":   true,
-		"!":   true,
-		"?":   true,
-		"but": true,
-		"however": true,
+		",":        true,
+		";":        true,
+		":":        true,
+		".":        true,
+		"!":        true,
+		"?":        true,
+		"but":      true,
+		"however":  true,
 		"although": true,
 	}
 	return boundaries[strings.ToLower(token.Text)]
@@ -711,14 +738,14 @@ func classifyPolarity(polarity, intensity float64) SentimentClass {
 	if math.Abs(polarity) < 0.1 {
 		return Neutral
 	}
-	
+
 	if polarity > 0 {
 		if intensity > 0.6 && polarity > 0.5 {
 			return StrongPositive
 		}
 		return Positive
 	}
-	
+
 	if intensity > 0.6 && polarity < -0.5 {
 		return StrongNegative
 	}
@@ -729,7 +756,7 @@ func classifyPolarity(polarity, intensity float64) SentimentClass {
 func calculateClassProb(polarity, intensity float64, class SentimentClass) float64 {
 	// Simple gaussian-like distribution around class centers
 	var center, spread float64
-	
+
 	switch class {
 	case StrongPositive:
 		center = 0.8
@@ -749,57 +776,58 @@ func calculateClassProb(polarity, intensity float64, class SentimentClass) float
 	default:
 		return 0
 	}
-	
+
 	// Calculate distance from center
 	distance := math.Abs(polarity - center)
-	
+
 	// Gaussian-like probability
 	prob := math.Exp(-distance * distance / (2 * spread * spread))
-	
+
 	// Adjust for intensity
-	if class == StrongPositive || class == StrongNegative {
+	switch class {
+	case StrongPositive, StrongNegative:
 		prob *= intensity
-	} else if class == Neutral {
+	case Neutral:
 		prob *= (1 - intensity)
 	}
-	
+
 	return math.Min(1.0, math.Max(0.0, prob))
 }
 
 // combineScores combines two sentiment scores with weighting
 func combineScores(score1, score2 SentimentScore, weight2 float64) SentimentScore {
 	weight1 := 1.0 - weight2
-	
+
 	// If first score is empty, return second
 	if score1.Confidence == 0 || len(score1.Scores) == 0 {
 		return score2
 	}
-	
-	// If second score is empty, return first  
+
+	// If second score is empty, return first
 	if score2.Confidence == 0 || len(score2.Scores) == 0 {
 		return score1
 	}
-	
+
 	combined := SentimentScore{
 		Polarity:     score1.Polarity*weight1 + score2.Polarity*weight2,
 		Intensity:    score1.Intensity*weight1 + score2.Intensity*weight2,
 		Confidence:   score1.Confidence*weight1 + score2.Confidence*weight2,
 		Subjectivity: score1.Subjectivity*weight1 + score2.Subjectivity*weight2,
 	}
-	
+
 	// Combine features
 	combined.Features.PositiveWords = append(score1.Features.PositiveWords, score2.Features.PositiveWords...)
 	combined.Features.NegativeWords = append(score1.Features.NegativeWords, score2.Features.NegativeWords...)
 	combined.Features.Modifiers = append(score1.Features.Modifiers, score2.Features.Modifiers...)
 	combined.Features.Negations = append(score1.Features.Negations, score2.Features.Negations...)
 	combined.Features.Intensifiers = append(score1.Features.Intensifiers, score2.Features.Intensifiers...)
-	
+
 	// Recalculate dominant class
 	combined.Dominant = classifyPolarity(combined.Polarity, combined.Intensity)
-	
+
 	// Combine class scores
 	combined.Scores = make(map[SentimentClass]float64)
-	
+
 	// Get all possible classes from both scores
 	allClasses := make(map[SentimentClass]bool)
 	for class := range score1.Scores {
@@ -808,14 +836,14 @@ func combineScores(score1, score2 SentimentScore, weight2 float64) SentimentScor
 	for class := range score2.Scores {
 		allClasses[class] = true
 	}
-	
+
 	// Combine scores for all classes
 	for class := range allClasses {
 		prob1 := score1.Scores[class]
 		prob2 := score2.Scores[class]
 		combined.Scores[class] = prob1*weight1 + prob2*weight2
 	}
-	
+
 	// Normalize combined probabilities to sum to 1.0
 	totalProb := 0.0
 	for _, prob := range combined.Scores {
@@ -825,7 +853,7 @@ func combineScores(score1, score2 SentimentScore, weight2 float64) SentimentScor
 		for class := range combined.Scores {
 			combined.Scores[class] /= totalProb
 		}
-		
+
 		// Recalculate dominant class after normalization
 		maxProb := 0.0
 		for class, prob := range combined.Scores {
@@ -835,7 +863,7 @@ func combineScores(score1, score2 SentimentScore, weight2 float64) SentimentScor
 			}
 		}
 	}
-	
+
 	return combined
 }
 
@@ -881,40 +909,39 @@ func (sc *sentimentClassifier) predict(features map[string]float64) SentimentSco
 	// Calculate scores for each sentiment class
 	classScores := make(map[string]float64)
 	maxScore := math.Inf(-1)
-	
+
 	// Calculate scores for each sentiment class
 	for _, label := range sc.model.labels {
 		score := 0.0
 		encoded := sc.model.encodeSentimentFeatures(stringFeatures, label)
-		
+
 		for _, feature := range encoded {
 			if feature.key < len(sc.model.weights) {
 				score += sc.model.weights[feature.key] * float64(feature.value)
 			}
 		}
-		
+
 		classScores[label] = score
 		if score > maxScore {
 			maxScore = score
 		}
 	}
-	
-	
+
 	// Apply softmax to convert scores to probabilities
 	probabilities := make(map[SentimentClass]float64)
 	totalExp := 0.0
-	
+
 	for label, score := range classScores {
 		exp := math.Exp(score - maxScore) // Subtract maxScore for numerical stability
 		probabilities[SentimentClass(label)] = exp
 		totalExp += exp
 	}
-	
+
 	// Normalize probabilities
 	for class := range probabilities {
 		probabilities[class] /= totalExp
 	}
-	
+
 	// Ensure all 5 sentiment classes are included, even if they have 0 probability
 	allSentimentClasses := []SentimentClass{StrongNegative, Negative, Neutral, Positive, StrongPositive}
 	for _, class := range allSentimentClasses {
@@ -922,7 +949,7 @@ func (sc *sentimentClassifier) predict(features map[string]float64) SentimentSco
 			probabilities[class] = 0.0
 		}
 	}
-	
+
 	// Force renormalization of probabilities to ensure they sum to 1.0
 	total := 0.0
 	for _, prob := range probabilities {
@@ -933,7 +960,7 @@ func (sc *sentimentClassifier) predict(features map[string]float64) SentimentSco
 			probabilities[class] /= total
 		}
 	}
-	
+
 	// Find dominant class
 	dominant := Neutral
 	maxProb := 0.0
@@ -943,12 +970,12 @@ func (sc *sentimentClassifier) predict(features map[string]float64) SentimentSco
 			dominant = class
 		}
 	}
-	
+
 	// Calculate polarity and intensity
 	polarity := sc.calculatePolarity(probabilities)
 	intensity := sc.calculateIntensity(probabilities)
 	confidence := maxProb // Confidence is the probability of the dominant class
-	
+
 	return SentimentScore{
 		Polarity:     polarity,
 		Intensity:    intensity,
@@ -963,7 +990,7 @@ func (sc *sentimentClassifier) predict(features map[string]float64) SentimentSco
 func (sc *sentimentClassifier) calculatePolarity(probabilities map[SentimentClass]float64) float64 {
 	positive := probabilities[StrongPositive]*1.0 + probabilities[Positive]*0.5
 	negative := probabilities[StrongNegative]*1.0 + probabilities[Negative]*0.5
-	
+
 	return positive - negative
 }
 
@@ -971,7 +998,7 @@ func (sc *sentimentClassifier) calculatePolarity(probabilities map[SentimentClas
 func (sc *sentimentClassifier) calculateIntensity(probabilities map[SentimentClass]float64) float64 {
 	strong := probabilities[StrongPositive] + probabilities[StrongNegative]
 	mild := probabilities[Positive] + probabilities[Negative]
-	
+
 	return strong*1.0 + mild*0.5
 }
 
